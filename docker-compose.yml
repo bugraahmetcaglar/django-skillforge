@@ -1,0 +1,66 @@
+version: '3'
+
+volumes:
+  postgres_data:
+  local_mysql_data: {}
+  local_mysql_data_backups: {}
+  local_bitnami_redis_data: {}
+
+services:
+  web:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    command: python manage.py runserver 0.0.0.0:8001
+    image: skillforge_local
+    stdin_open: true
+    volumes:
+      - .:/code
+      - ./static:/static
+    ports:
+      - "8001:8001"
+    depends_on:
+      - db
+      - redis
+      - celery
+    env_file:
+      - ./dev.env
+    restart:
+      unless-stopped
+
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: skillforge
+      POSTGRES_USER: django
+      POSTGRES_PASSWORD: django
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6376:6379"
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A skillforge worker -l info
+    volumes:
+      - .:/code
+    depends_on:
+      - db
+      - redis
+
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A skillforge flower
+    ports:
+      - "5556:5555"
+    depends_on:
+      - celery
