@@ -1,5 +1,4 @@
 import datetime
-from abc import ABC
 
 from django.contrib import auth
 from django.contrib.auth.password_validation import validate_password
