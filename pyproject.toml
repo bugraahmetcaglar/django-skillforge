@@ -1,0 +1,11 @@
+[tool.pyright]
+include = ["core", "asf"]
+
+[tool.coverage.run]
+include =  ["core/*"]
+omit = [
+    "*migrations*",
+    "*tests*",
+    "*scripts*",
+]
+plugins = ["django_coverage_plugin"]

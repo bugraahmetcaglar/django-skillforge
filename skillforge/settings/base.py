@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,7 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-(q_xc+d@c4wzz0@80)nraq&7k^^*@yhj-_8h$a5ax!d0zpgfi$"
+SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -97,11 +98,11 @@ WSGI_APPLICATION = "skillforge.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "skillforge",
-        "USER": "django",
-        "PASSWORD": "django",
-        "HOST": "db",
-        "PORT": 5432,
+        "NAME": os.environ.get("DB_NAME"),
+        "USER": os.environ.get("DB_USER"),
+        "PASSWORD": os.environ.get("DB_PASSWORD"),
+        "HOST": os.environ.get("DB_HOST"),
+        "PORT": os.environ.get("DB_PORT"),
     }
 }
 
@@ -186,3 +187,85 @@ CORS_ALLOW_HEADERS = (
 # Celery
 # ------------------------------------------------------------------------------
 # BROKER_URL = os.environ.get("BROKER_URL", "amqp://guest:guest@localhost//")
+
+# LOGGING
+# ------------------------------------------------------------------------------
+# A sample logging configuration. The only tangible logging
+# performed by this configuration is to send an email to
+# the site admins on every HTTP 500 error when DEBUG=False.
+# See http://docs.djangoproject.com/en/dev/topics/logging for
+# more details on how to customize your logging configuration.
+LOG_FORMAT = "[%(asctime)s] [%(levelname)-7s] [%(module)s %(name)s (%(lineno)d)] %(message)s"
+LONG_LOG_FORMAT = "[%(asctime)s] [%(levelname)-7s] [p:%(process)d th:%(thread)d | m:%(module)s n:%(name)s ln:(%(lineno)d)] %(message)s"
+LOG_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
+LOG_LEVEL = os.getenv("DJANGO_LOG_LEVEL", "WARNING")
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "format": LOG_FORMAT,
+            "datefmt": LOG_DATE_FORMAT,
+        },
+        "simple": {
+            "format": "[%(asctime)s %(levelname)s %(module)s] %(message)s",
+            "datefmt": LOG_DATE_FORMAT,
+        },
+        "verbose": {
+            "format": LONG_LOG_FORMAT,
+            "datefmt": LOG_DATE_FORMAT,
+        },
+    },
+    "filters": {
+        "require_debug_false": {"()": "django.utils.log.RequireDebugFalse"},
+        "require_debug_true": {"()": "django.utils.log.RequireDebugTrue"},
+    },
+    "handlers": {
+        "console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "formatter": "default" if LOG_LEVEL != "DEBUG" else "verbose",
+        },
+        "console_simple": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "filters": ["require_debug_true"],
+            "formatter": "simple",
+        },
+        "mail_admins": {
+            "level": "ERROR",
+            "filters": ["require_debug_false"],
+            "class": "django.utils.log.AdminEmailHandler",
+        },
+    },
+    "root": {
+        "level": os.getenv("ROOT_LOG_LEVEL", LOG_LEVEL),
+        "handlers": ["console"],
+    },
+    "loggers": {
+        "django": {
+            "level": LOG_LEVEL,
+            "handlers": ["console", "mail_admins"],
+            "propagate": False,
+        },
+        "django.request": {
+            "level": LOG_LEVEL,
+            "propagate": True,
+        },
+        "django.server": {
+            "level": LOG_LEVEL,
+            "propagate": True,
+        },
+        "django.db.backends": {
+            "level": "ERROR",
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        "django.security.DisallowedHost": {
+            "level": "ERROR",
+            "handlers": ["console", "mail_admins"],
+            "propagate": True,
+        },
+    },
+}
