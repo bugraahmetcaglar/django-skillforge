@@ -1,11 +1,31 @@
-FROM python:3.8.14
+ARG PYTHON_VERSION=3.11-rc-bullseye
+FROM python:${PYTHON_VERSION} as python
+FROM python as builder
+
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    build-essential \
+    default-libmysqlclient-dev
+
+ARG BUILD_ENVIRONMENT=local
+
+COPY ./requirements /requirements
+RUN pip wheel --wheel-dir /usr/src/app/wheels  \
+    -r "/requirements/${BUILD_ENVIRONMENT}.txt"
+
+FROM python as runner
+
+ARG APP_HOME=/code
+WORKDIR ${APP_HOME}
 
 ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV TZ="Europe/Istanbul"
 
-RUN mkdir /code
-WORKDIR /code
+COPY --from=builder /usr/src/app/wheels  /wheels/
 
-COPY requirements.txt /code/
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir --no-index --find-links=/wheels/ /wheels/* \
+    && rm -rf /wheels/
 
-COPY . /code/
+COPY --chown=django:django . ${APP_HOME}
+
+USER django
