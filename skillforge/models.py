@@ -1,4 +1,8 @@
+import uuid
 from django.db import models
+from django.utils import timezone
+
+from ckeditor.fields import RichTextField
 
 import datetime
 
@@ -11,7 +15,40 @@ class SkillForgeBaseQuerySet(models.QuerySet):
 
 
 class BaseModel(models.Model):
-    created_at = models.DateTimeField(auto_now=True, auto_now_add=True)
-    last_updated = models.DateTimeField(auto_now=False, auto_now_add=True, null=True)
-    created_by = models.ForeignKey(null=True, on_deleted=models.SET_NULL, related_name="created_by_+")
-    updated_by = models.ForeignKey(null=True, on_deleted=models.SET_NULL, related_name="updated_by_+")
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(db_index=True, default=timezone.now)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+class BaseCategory(BaseModel):
+    title = models.CharField(max_length=127)
+    slug = models.SlugField(max_length=255, allow_unicode=True)
+    view = models.PositiveIntegerField(default=0)
+    code = models.CharField(unique=True, max_length=9, null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+
+class BaseComment(BaseModel):
+    code = models.CharField(unique=True, max_length=32)
+    content = RichTextField(blank=False, null=False)
+    view = models.PositiveIntegerField(default=0)
+    like = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        abstract = True
+
+
+class BaseTag(BaseModel):
+    title = models.CharField(max_length=254, unique=True)
+    slug = models.SlugField(max_length=254, allow_unicode=True)
+    view = models.PositiveIntegerField(default=0)
+    like = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        abstract = True

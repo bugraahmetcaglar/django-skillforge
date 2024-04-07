@@ -10,7 +10,7 @@ from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from user.models import User
+from core.user.models import User
 
 
 class UserLoginSerializer(serializers.ModelSerializer):
@@ -20,40 +20,28 @@ class UserLoginSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'username', 'data']
+        fields = ["email", "password", "username", "token"]
 
     def validate(self, attrs):
-        username = attrs.get('username', '')
-        password = attrs.get('password', '')
+        username = attrs.get("username", "")
+        password = attrs.get("password", "")
         try:
             instance = User.objects.get(Q(email=username) | Q(username=username))
         except:
-            raise AuthenticationFailed('Invalid credential, try again')
+            raise AuthenticationFailed("Invalid credential, try again")
         user = auth.authenticate(username=instance.username, password=password)
         if not user:
-            raise AuthenticationFailed('Invalid credential, try again')
+            raise AuthenticationFailed("Invalid credential, try again")
         user.last_login = datetime.datetime.now()
-        user.save()
-        return {
-            'email': user.email,
-            'username': user.username,
-            'data': user.data
-        }
+        user.save(update_fields=["last_login"])
+        return {"email": user.email, "username": user.username, "data": user.token}
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = (
-            'id',
-            'username',
-            'email',
-            'first_name',
-            'last_name',
-            'date_joined',
-            'last_login',
-        )
+        fields = ("id", "username", "email", "first_name", "last_name", "date_joined", "last_login")
 
 
 class UserListSerializer(serializers.ModelSerializer):
@@ -66,66 +54,62 @@ class UserListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'username', 'first_name', 'last_name', 'date_joined', 'last_login']
+        fields = ["email", "username", "first_name", "last_name", "date_joined", "last_login"]
 
 
 class UserLogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
 
-    default_error_messages = {
-        'bad_token': 'Token is expired or invalid'
-    }
+    default_error_messages = {"bad_token": "Token is expired or invalid"}
 
     def validate(self, attrs):
-        self.token = attrs['refresh']
+        self.token = attrs["refresh"]
         return attrs
 
-    def save(self, **kwargs):
+    def save(self):
         try:
             RefreshToken(self.token).blacklist()
         except TokenError:
-            self.fail('bad_token')
+            self.fail("bad_token")
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(
-        required=True,
-        validators=[UniqueValidator(queryset=User.objects.all())]
-    )
+    email = serializers.EmailField(required=True, validators=[UniqueValidator(queryset=User.objects.all())])
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = User
-        fields = ('username', 'password', 'password2', 'email', 'first_name', 'last_name')
-        extra_kwargs = {
-            'first_name': {'required': False},
-            'last_name': {'required': False}
-        }
+        fields = ("username", "password", "password2", "email", "first_name", "last_name")
+        extra_kwargs = {"first_name": {"required": False}, "last_name": {"required": False}}
 
     def validate(self, attrs):
-        if attrs['password'] != attrs['password2']:
+        if attrs["password"] != attrs["password2"]:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
         return attrs
 
     def create(self, validated_data):
         user = User.objects.create(
-            username=validated_data['username'],
-            email=validated_data['email'],
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name']
+            username=validated_data["username"],
+            email=validated_data["email"],
+            first_name=validated_data["first_name"],
+            last_name=validated_data["last_name"],
         )
-        user.set_password(validated_data['password'])
+        user.set_password(validated_data["password"])
         user.save()
         return user
 
 
-class UserForgetPasswordSerializer(serializers.Serializer):
+class UserForgetPasswordSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
 
     def validate(self, attrs):
-        get_object_or_404(User, email=attrs['email'])
+        get_object_or_404(User, email=attrs["email"])
         return attrs
+
+    class Meta:
+        model = User
+        fields = ("email",)
 
 
 class UserResetPasswordSerializer(serializers.ModelSerializer):
@@ -134,9 +118,9 @@ class UserResetPasswordSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('password', 'password2')
+        fields = ("password", "password2")
 
     def validate(self, attrs):
-        if attrs['password'] != attrs['password2']:
+        if attrs["password"] != attrs["password2"]:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
         return attrs

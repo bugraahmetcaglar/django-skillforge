@@ -7,14 +7,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 class User(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    email = models.EmailField(max_length=200, unique=True)
+    email = models.EmailField(max_length=255, unique=True)
 
-    def data(self):
+    def token(self):
         refresh = RefreshToken.for_user(self)
-        return {
-            'refresh_token': f"{refresh}",
-            'access_token': str(refresh.access_token)
-        }
-
-    class Meta:
-        db_table = "user"
+        return {"refresh_token": f"{refresh}", "access_token": str(refresh.access_token)}

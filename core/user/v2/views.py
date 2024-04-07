@@ -10,8 +10,8 @@ from rest_framework.generics import (
 from rest_framework_jwt.settings import api_settings
 
 from skillforge.constants import BaseResponse
-from user.models import User
-from user.v1.serializers import (
+from core.user.models import User
+from core.user.v1.serializers import (
     UserLoginSerializer, UserRegisterSerializer,
     UserLogoutSerializer, UserListSerializer
 )
