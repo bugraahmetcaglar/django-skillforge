@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from django.utils import timezone
+from django.utils.crypto import get_random_string
 
 from ckeditor.fields import RichTextField
 
@@ -35,7 +36,6 @@ class BaseCategory(BaseModel):
 
 
 class BaseComment(BaseModel):
-    code = models.CharField(unique=True, max_length=32)
     content = RichTextField(blank=False, null=False)
     view = models.PositiveIntegerField(default=0)
     like = models.PositiveIntegerField(default=0)
@@ -45,10 +45,21 @@ class BaseComment(BaseModel):
 
 
 class BaseTag(BaseModel):
-    title = models.CharField(max_length=254, unique=True)
-    slug = models.SlugField(max_length=254, allow_unicode=True)
+    title = models.CharField(max_length=127, unique=True)
+    slug = models.SlugField(max_length=255, allow_unicode=True)
     view = models.PositiveIntegerField(default=0)
     like = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        abstract = True
+
+
+class BasePost(BaseModel):
+    code = models.CharField(unique=True, max_length=32, default=get_random_string(length=32))
+    title = models.CharField(max_length=127, null=False, blank=False)
+    slug = models.SlugField(unique=True, max_length=255, allow_unicode=True)
+    content = RichTextField(null=False, blank=False)
+    view = models.PositiveIntegerField(default=0)
 
     class Meta:
         abstract = True
