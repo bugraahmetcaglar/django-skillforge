@@ -9,7 +9,7 @@ from rest_framework.generics import (
 )
 from rest_framework_jwt.settings import api_settings
 
-from skillforge.constants import BaseResponse
+from skillforge.utils import BaseResponse
 from core.user.models import User
 from core.user.v1.serializers import (
     UserLoginSerializer, UserRegisterSerializer,
@@ -28,7 +28,7 @@ class UserLoginAPIView(CreateAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        return BaseResponse(data=serializer.data, status_code=status.HTTP_200_OK).success_with_data()
+        return BaseResponse(data=serializer.data, status_code=status.HTTP_200_OK).success_data()
 
 
 class UserRegistrationAPIView(CreateAPIView):
@@ -79,4 +79,4 @@ class UserListAPIView(ListAPIView):
         return BaseResponse(
             data=serializer_data,
             status_code=status.HTTP_200_OK
-        ).success_with_data()
+        ).success_data()
